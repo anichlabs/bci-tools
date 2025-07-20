@@ -14,7 +14,11 @@
 
 # src/logger.py
 
+# Import the os module to handle file paths and directories.
 import os
+
+# Import datatime to generate a timestamp for each EEG sample.
+from datetime import datetime
 
 class BCILogger:
     """
