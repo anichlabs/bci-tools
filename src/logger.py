@@ -18,7 +18,7 @@
 import os
 
 # Import datatime to generate a timestamp for each EEG sample.
-from datetime import datetime
+from datetime import datetime, timezone
 
 class BCILogger:
     """
@@ -50,3 +50,29 @@ class BCILogger:
                 # Write the CSV header: timestamp, ch1, ch2, ..., ch16.
                 header = 'timestamp,' + ','.join([f'ch{i+1}' for i in range(16)]) + '\n'
                 f.write(header)
+
+    def log(self, samples: list[float]) -> None:
+            """
+            Write a row of EEG sample data to the CSV file with a UTC timestamp.
+
+            Args:
+                samples (list of float): A list of 16 signal values at one time point.
+            """
+    
+            """
+            This ensures you're compliant with standards like:
+                - ISO 8601
+                - FHIR / HL7
+                - Medical audit logging
+            """
+            # Generate a timestamp in ISO 8901 format (UTC time).
+            timestamp = datetime.now(timezone.utc).isoformat()
+
+            # Convert all float values to strings, joined by commas.
+            # It's not possible to join floats with commas. 
+            # The join() function only works on strings.
+            row = f'{timestamp},' + ','.join(map(str, samples)) + '\n'
+
+            # Append the row to the CSV file.
+            with open(self.filename, 'a') as f:
+                f.write(row)
