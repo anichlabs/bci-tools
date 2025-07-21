@@ -70,7 +70,7 @@ def test_absolute_bandpower_output(synthetic_eeg_signal):
         - The function behaves as expected given a known input shape.
     """
     signal, fs = synthetic_eeg_signal
-    fe = FeatureExtractor
+    fe = FeatureExtractor()
 
     bandpower = fe.compute_absolute_bandpower(signal, fs)
 
@@ -95,4 +95,3 @@ def test_absolute_bandpower_output(synthetic_eeg_signal):
 
         # All values must be >= 0 (power cannot be negative).
         assert np.all(values >= 0), f'{band} bandporwer contains negative power values.'
-        
