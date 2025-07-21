@@ -97,13 +97,25 @@ class FeatureExtractor:
 
         # 2.- Stack all absolute powers into a 2D array: shape = (n_bands, n_channels),
         #     all between 0 and 1.
-
+        band_matrix = np.stack([absolute_power[band] for band in self.eeg_bands.keys()], axis=0)
+        
         # 3.- Compute total power per channel (e.g, column-wise sum).
         #     This  gives us: total_power = [P_ch1, P_ch2, ..., P_chN].
+        total_power = np.sum(band_matrix, axis=0) # axis=0 refers to row.
 
         # 4.- Avoid divide-by-zero: add small ε total_power is 0 anywhere.
+        total_power = np.where(total_power == 0, 1e-12, total_power)
 
         # 5.- Compute relative power per band: divide each row by total_power.
         #     Result is: relative_matrix[band, ch] = absolute_power[band, ch].
+        relative_matrix = band_matrix / total_power
 
         # 6.- Convert back to dictionary: key = band name, value = relative power per channel.
+        relative_power = {
+            band:relative_matrix[i, :]
+            for i, band in enumerate(self.eeg_bands.keys())
+        }
+
+        return relative_power
+    
+    

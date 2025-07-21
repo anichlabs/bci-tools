@@ -95,3 +95,46 @@ def test_absolute_bandpower_output(synthetic_eeg_signal):
 
         # All values must be >= 0 (power cannot be negative).
         assert np.all(values >= 0), f'{band} bandporwer contains negative power values.'
+
+# -----------------------------
+# TEST: Relative Bandpower Output:
+# -----------------------------
+
+def test_relative_bandpower_output(synthetic_eeg_signal):
+    """
+    Relative Bandpower:
+                Goal:
+        - Confirm that each EEG band returns a 1D NumPy array (length = n_channels).
+        - All values are between 0 and 1 (inclusive).
+        - For each channel, the total relative power across bands should ≈ 1.
+    """
+    signal, fs = synthetic_eeg_signal
+    fe = FeatureExtractor()
+
+    rel_power = fe.compute_relative_bandpower(signal, fs)
+    expected_bands = ['delta', 'theta', 'alpha', 'beta', 'gamma']
+
+    # Output must be a dictionary with expected EEG band keys.
+    assert isinstance(rel_power, dict), 'Output must be a dictionary.'
+    assert set(rel_power.keys()) == set(expected_bands), 'Band keys mismatch.'
+
+    # Shape, range, and summation checks.
+    channel_count = signal.shape[0] # shape[0]: number of rows.
+    band_matrix = [] 
+
+    for band in expected_bands:
+        band_vals = rel_power[band]
+
+        # Must be a 1D NumPy array.
+        assert isinstance(band_vals, np.ndarray), f'{band} must return a NumPy array.'
+        assert band_vals.ndim == 1, f'{band} output must be 1D.'
+        assert band_vals.shape[0] == channel_count, f'{band} length must match number of channels.'
+
+        # Must lie within [0, 1].
+        assert np.all(band_vals >= 0) and np.all(band_vals <= 1), f'{band} contains out-of-range values.'
+
+        band_matrix.append(band_vals)
+
+    # Ensure sum of all relative powers across bands = 1 per channel (within tolerance).
+    total_per_channel = np.sum(band_matrix, axis=0)
+    np.testing.assert_allclose(total_per_channel, np.ones(channel_count), atol=1e-6)
