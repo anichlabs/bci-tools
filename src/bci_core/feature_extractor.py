@@ -1,121 +1,121 @@
-# src/feature_extractor.py
+# src/bci_core/feature_extractor.py
 
 import numpy as np
 from scipy.signal import welch
 
 class FeatureExtractor:
     """
-    FeatureExtractor class for EEG signal analysis.
+    EEG Feature Extraction Module.
 
-    Provides methods to compute absolute and relative power
-    for standard EEG frequency bands: delta, theta, alpha, beta, gamma.
+    This class extracts absolute and relative power features from EEG signals
+    across a wide range of standard and extended frequency bands, including:
+
+        - Delta       (0.5–4 Hz)
+        - Theta       (4–8 Hz)
+        - Mu          (8–13 Hz)
+        - Low Alpha   (8–10 Hz)
+        - High Alpha  (10–12 Hz)
+        - Alpha       (8–12 Hz)
+        - Beta        (12–30 Hz)
+        - Gamma       (30–45 Hz)
+        - High Gamma  (60–100 Hz)
+    
+    Power values are calculated using Welch's method (non-parametric PSD estimate),
+    and stored for later access per channel and frequency band.
+
+    Attributes:
+        sfreq (float): Sampling frequency in Hz.
+        eeg_bands (dict): EEG bands as (low_freq, high_freq) tuples.
+        bandpower (dict): bandpower[channel][band] → {absolute, relative}
     """
 
-    def __init__(self):
+    def __init__(self, sfreq: float = 250.0):
         """
-        Initialise standard EEG frequency bands (in Hz).
-        These ranges are based on clinical convention.
-        """        
+        Initialise the band definitions and internal storage.
+
+        Args:
+            sfreq (float): Sampling frequency in Hz (default: 250.0)
+        """
+        self.sfreq = sfreq
+
+        # Define full EEG band dictionary (standard + extended bands)
         self.eeg_bands = {
             'delta': (0.5, 4),
             'theta': (4, 8),
-            'alpha': (8, 13),
-            'beta': (13, 30),
-            'gamma': (30, 45)
+            'mu': (8, 13),
+            'low_alpha': (8, 10),
+            'high_alpha': (10, 12),
+            'alpha': (8, 12),
+            'beta': (12, 30),
+            'gamma': (30, 45),
+            'high_gamma': (60, 100)
         }
 
-    def compute_absolute_bandpower(self, signal: np.ndarray, fs: int):
-        """
-        Method: compute_absolute_bandpower
+        self.bandpower = {}  # Will be populated after feature extraction
 
-        Goal:
-            Calculate absolute bandpower in each EEG frequency band using Welch's method.
+    def extract_features(self, signal: np.ndarray):
+        """
+        Compute absolute and relative bandpower for each EEG band and channel.
+
+        Uses Welch’s method to estimate power spectral density (PSD),
+        then integrates PSD over each frequency band using NumPy’s trapezoid rule.
+
+        Args:
+            signal (np.ndarray): EEG data of shape (n_channels, n_samples)
+
+        Raises:
+            ValueError: If input is not 2D.
+        """
         
-        Parameters:
-            signal (np.ndarray): Shape = (n_channels, n_samples) — EEG data.
-            fs (int): Sampling frequency in Hz.
-
-        Returns:
-            dict[str, np.ndarray]:
-                - Each key corresponds to a frequency band.
-                - Each value is a 1D array of power values (length = n_channels).
-        """
-        # Validate input shape.
         if signal.ndim != 2:
-            raise ValueError('Signal must be a 2D Numpy aaray (channels x samples)')
-        
-        n_channels, _ = signal.shape
-        bandpower_dict = {}
+            raise ValueError("Signal must be a 2D array (n_channels × n_samples)")
 
-        # Apply Welch's method to each channel independently.
-        for band, (low_f, high_f) in self.eeg_bands.items():
-            band_powers = []
+        n_channels = signal.shape[0]
+        self.bandpower = {ch: {} for ch in range(n_channels)}
 
-            for ch in range(n_channels):
-                # Compute Power Spectral Density (PSD) for this channel.
-                freqs, psd = welch(signal[ch], fs=fs, nperseg=fs*2)
+        for ch in range(n_channels):
+            # Welch PSD estimation for channel
+            freqs, psd = welch(signal[ch], fs=self.sfreq)
 
-               # Find indices corresponding to the band range.
+            # Total power in full frequency range (used for relative computation)
+            total_power = np.trapezoid(psd, freqs)
+
+            for band, (low_f, high_f) in self.eeg_bands.items():
+                # Frequency indices within band
                 idx_band = np.logical_and(freqs >= low_f, freqs <= high_f)
 
-                # Integrate PSD over the band to get absolute power.
+                # Absolute band power via trapezoidal integration
                 band_power = np.trapezoid(psd[idx_band], freqs[idx_band])
-                band_powers.append(band_power)
 
-            # Store as NumPy array.
-            bandpower_dict[band] = np.array(band_powers)
+                # Normalised relative band power (fraction of total)
+                rel_power = band_power / total_power if total_power > 0 else 0.0
 
-        return bandpower_dict
-    
-    def compute_relative_bandpower(self, signal: np.ndarray, fs: int):
+                # Store in nested dictionary
+                self.bandpower[ch][band] = {
+                    'absolute': band_power,
+                    'relative': rel_power
+                }
+
+    def get_bandpower(self, channel: int, band: str, mode: str = 'absolute') -> float:
         """
-        Method: compute_relative_bandpower
+        Retrieve bandpower for a given channel and band.
 
-        Goal:
-            Calculate the relative power (i.e., normalised power) in each EEG frequency band.
-            This is computed as the proportion of total bandpower per channel.
-
-        Parameters:
-            signal (np.ndarray): EEG data of shape (n_channels, n_samples).
-            fs (int): Sampling rate in Hz.
+        Args:
+            channel (int): EEG channel index (0-based)
+            band (str): Band name (e.g. 'alpha', 'mu')
+            mode (str): 'absolute' or 'relative'
 
         Returns:
-            dict[str, np.ndarray]:
-                - Keys are frequency band names.
-                - Values are 1D NumPy arrays of relative power (length = n_channels), all 
-                between 0 and 1.
+            float: Bandpower value for that channel and band
 
-        Clinical + Signal Processing Rationale:
-            - Absolute bandpower gives the raw power within a band (e.g., μV²).
-            - Relative bandpower expresses this as a proportion of total power across all 
-            bands, per channel.
-            - Clinically, this helps compare signal features across subjects with different 
-            baseline amplitudes (e.g. drowsiness or mental workload monitoring).
+        Raises:
+            ValueError: If mode, band, or channel is invalid
         """
-        # 1.- Calculate absolute power for each band.
-        absolute_power = self.compute_absolute_bandpower(signal, fs)
+        if band not in self.eeg_bands:
+            raise ValueError(f"Unknown band: {band}")
+        if channel not in self.bandpower:
+            raise ValueError(f"Channel {channel} not found. Run extract_features() first.")
+        if mode not in ['absolute', 'relative']:
+            raise ValueError(f"Mode must be 'absolute' or 'relative'")
 
-        # 2.- Stack all absolute powers into a 2D array: shape = (n_bands, n_channels),
-        #     all between 0 and 1.
-        band_matrix = np.stack([absolute_power[band] for band in self.eeg_bands.keys()], axis=0)
-        
-        # 3.- Compute total power per channel (e.g, column-wise sum).
-        #     This  gives us: total_power = [P_ch1, P_ch2, ..., P_chN].
-        total_power = np.sum(band_matrix, axis=0) # axis=0 refers to row.
-
-        # 4.- Avoid divide-by-zero: add small ε total_power is 0 anywhere.
-        total_power = np.where(total_power == 0, 1e-12, total_power)
-
-        # 5.- Compute relative power per band: divide each row by total_power.
-        #     Result is: relative_matrix[band, ch] = absolute_power[band, ch].
-        relative_matrix = band_matrix / total_power
-
-        # 6.- Convert back to dictionary: key = band name, value = relative power per channel.
-        relative_power = {
-            band:relative_matrix[i, :]
-            for i, band in enumerate(self.eeg_bands.keys())
-        }
-
-        return relative_power
-    
-    
+        return self.bandpower[channel][band][mode]
