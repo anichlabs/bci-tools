@@ -82,18 +82,110 @@ def synthetic_1d_signal():
     pure = np.sin(2 * np.pi * 10 * t) # Pure alpha wave (10 Hz), (which occurs naturally in relaxed wakefulness).
     noisy = pure + 0.5 * np.random.randn(len(t))
     return noisy
-     
-# --------------------------------
-# TESTS: BANDPASS FILTER FUNCTION
-# --------------------------------
 
 @pytest.fixture
 def synthetic_2d_signal():
     """
-        Simulated 2D EEG signal:
-            - Channels: 4
-            - Duration: 4 seconds
-            - Each channel: different base frequency + noise
-        Returns:
-            np.ndarray of shape (4, 1000)
-        """
+    Simulated 2D EEG signal:
+        - Channels: 4
+        - Duration: 4 seconds
+        - Each channel: different base frequency + noise
+    Returns:
+        np.ndarray of shape (4, 1000)
+    """
+    fs = 250
+    t = np.linspace(0, 4, 4 * fs, endpoint=False)
+    signals = []
+    # Simulated EEG subbands. Cover multiple bands (Theta, Alpha, Beta, Gamma).
+    for f in [5, 10, 20, 40]:
+        base = np.sin(2 * np.pi * f * t)
+        noisy = base + 0.3 * np.random.randn(len(t))
+        signals.append(noisy)
+    return np.array(signals)
+
+# --------------------------------
+# TESTS: BANDPASS FILTER FUNCTION
+# --------------------------------
+
+def test_bandpass_filter_1d(synthetic_1d_signal):
+    """
+    Test: Filtering a 1D EEG signal should preserve shape,
+    reduce out-of-band noise, and not crash on realistic input.
+    """
+    pre = SignalPreprocessor(lowcut=8, highcut=12, fs=250, order=4)
+    filtered = pre.bandpass_filter(synthetic_1d_signal)
+
+    assert isinstance(filtered, np.ndarray)
+    assert filtered.shape == synthetic_1d_signal.shape
+    assert not np.any(np.isnan(filtered))
+
+def test_bandpass_filter_2d(synthetic_2d_signal):
+    """
+    Test: Filtering a 2D EEG array should preserve shape (channels, timepoints),
+    and apply filter to each channel independently.
+    """
+    pre = SignalPreprocessor(lowcut=5, highcut=45, fs=250)
+    filtered = pre.bandpass_filter(synthetic_2d_signal)
+
+    assert isinstance(filtered, np.ndarray)
+    assert filtered.shape == synthetic_2d_signal.shape
+    assert filtered.ndim == 2
+    assert not np.any(np.isnan(filtered))
+
+def test_bandpass_invalid_dim():
+    """
+    Test: Invalid input dimensionality (e.g. 3D EEG or object) 
+    should raise ValueError.
+    """
+    pre = SignalPreprocessor()
+    bad_data = np.zeros((2, 2, 2)) # Invalid shape for EEG.
+
+    with pytest.raises(ValueError):
+        pre.bandpass_filter(bad_data)
+    
+# -------------------------------------
+# TESTS: Z-SCORE NORMALISATION FUNCTION
+# -------------------------------------
+
+def test_z_score_1d_normalisation(synthetic_1d_signal):
+    """
+    Test: Z-score normalisation on 1D EEG signal should:
+        - Return zero mean.
+        - Return unit variance.
+        - Preserve shape.
+    """
+    pre = SignalPreprocessor()
+    normed = pre.z_score_normalise(synthetic_1d_signal)
+
+    assert isinstance(normed, np.ndarray)
+    assert normed.shape == synthetic_1d_signal.shape
+    # assert_allclose: comparison between 2 objects to see if they are equal.
+    """
+    Whenever any computation is performed using floating point numbers, chances 
+    are very high that result is somewhat different from actual theoretical 
+    value. This is because of the floating point arithmetic.
+
+    To compare our result with the theoretical result, we need to do so with 
+    some tolerance for the error. Although, bigger our tolerance, bigger is 
+    the chance of getting something very erroneous marked as correct.
+    """
+    np.testing.assert_allclose(np.mean(normed), 0, atol=1e-7) # rtol: Relative Tolerance.
+                                                              # atol: Absolute Tolerance.
+    np.testing.assert_allclose(np.std(normed), 1, atol=1e-7)
+
+def test_z_score_2d_normalisation(synthetic_2d_signal):
+    """
+    Test: Per-channel Z-score normalisation should result in:
+        - Each channel having mean ≈ 0
+        - Each channel having std ≈ 1
+        - Same shape as input
+    """
+    pre = SignalPreprocessor()
+    normed = pre.z_score_normalise(synthetic_2d_signal)
+
+    assert isinstance(normed, np.ndarray)
+    assert normed.shape == synthetic_2d_signal.shape
+    assert not np.any(np.isnan(normed)) # Expect NO NaNs.
+    for channel in normed:
+        np.testing.assert_allclose(np.mean(channel), 0, atol=1e-7)
+        np.testing.assert_allclose(np.std(channel), 1, atol=1e-7)
