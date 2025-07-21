@@ -59,7 +59,7 @@ class FeatureExtractor:
                 idx_band = np.logical_and(freqs >= low_f, freqs <= high_f)
 
                 # Integrate PSD over the band to get absolute power.
-                band_power = np.trapz(psd[idx_band], freqs[idx_band])
+                band_power = np.trapezoid(psd[idx_band], freqs[idx_band])
                 band_powers.append(band_power)
 
             # Store as NumPy array.
