@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: anich_labs_bci_core
+Version: 0.1.0
+Summary: Core BCI processing tools for Anich Labs (logging, preprocessing, features)
+Author-email: Anich Labs <contact@anichlabs.com>
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENCE
+License-File: NOTICE.md
+Dynamic: license-file

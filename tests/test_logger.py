@@ -5,7 +5,7 @@ Simulate a single EEG sample and log it.
 
 import os
 import random
-from src.logger import BCILogger
+from bci_core.logger import BCILogger
 
 # Method to test with only 1 EEG sample if eeg_logs.csv is created.
 def test_logger_one_sample():

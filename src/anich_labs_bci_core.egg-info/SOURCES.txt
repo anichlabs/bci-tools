@@ -1,0 +1,10 @@
+LICENCE
+NOTICE.md
+pyproject.toml
+src/anich_labs_bci_core.egg-info/PKG-INFO
+src/anich_labs_bci_core.egg-info/SOURCES.txt
+src/anich_labs_bci_core.egg-info/dependency_links.txt
+src/anich_labs_bci_core.egg-info/top_level.txt
+src/bci_core/__init__.py
+src/bci_core/logger.py
+tests/test_logger.py
