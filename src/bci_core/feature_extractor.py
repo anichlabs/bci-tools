@@ -66,3 +66,44 @@ class FeatureExtractor:
             bandpower_dict[band] = np.array(band_powers)
 
         return bandpower_dict
+    
+    def compute_relative_bandpower(self, signal: np.ndarray, fs: int):
+        """
+        Method: compute_relative_bandpower
+
+        Goal:
+            Calculate the relative power (i.e., normalised power) in each EEG frequency band.
+            This is computed as the proportion of total bandpower per channel.
+
+        Parameters:
+            signal (np.ndarray): EEG data of shape (n_channels, n_samples).
+            fs (int): Sampling rate in Hz.
+
+        Returns:
+            dict[str, np.ndarray]:
+                - Keys are frequency band names.
+                - Values are 1D NumPy arrays of relative power (length = n_channels), all 
+                between 0 and 1.
+
+        Clinical + Signal Processing Rationale:
+            - Absolute bandpower gives the raw power within a band (e.g., μV²).
+            - Relative bandpower expresses this as a proportion of total power across all 
+            bands, per channel.
+            - Clinically, this helps compare signal features across subjects with different 
+            baseline amplitudes (e.g. drowsiness or mental workload monitoring).
+        """
+        # 1.- Calculate absolute power for each band.
+        absolute_power = self.compute_absolute_bandpower(signal, fs)
+
+        # 2.- Stack all absolute powers into a 2D array: shape = (n_bands, n_channels),
+        #     all between 0 and 1.
+
+        # 3.- Compute total power per channel (e.g, column-wise sum).
+        #     This  gives us: total_power = [P_ch1, P_ch2, ..., P_chN].
+
+        # 4.- Avoid divide-by-zero: add small ε total_power is 0 anywhere.
+
+        # 5.- Compute relative power per band: divide each row by total_power.
+        #     Result is: relative_matrix[band, ch] = absolute_power[band, ch].
+
+        # 6.- Convert back to dictionary: key = band name, value = relative power per channel.
