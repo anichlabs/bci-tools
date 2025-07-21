@@ -25,11 +25,11 @@ EEG Frequency Bands (Hz)
 """
 
 # -----------------------------
-# FIXTURE: Simulate 4-channel EEG (4s @ 250 Hz)
+# FIXTURE: Simulate 4-channel EEG (4s @ 250 Hz):
 # -----------------------------
 
 @pytest.fixture
-def synthetic_egg_signal():
+def synthetic_eeg_signal():
     np.random.seed(42)
     n_channels = 4
     duration_sec = 4
@@ -39,7 +39,7 @@ def synthetic_egg_signal():
     return signal, sampling_rate
 
 # -----------------------------
-# TEST: Class instantiation
+# TEST: Class instantiation:
 # -----------------------------
 
 # Instantiate the FeatureExtractor() class.
@@ -57,7 +57,7 @@ This test ensures that:
 """
 
 # -----------------------------
-# TEST: Absolute Bandpower Output
+# TEST: Absolute Bandpower Output:
 # -----------------------------
 
 def test_absolute_bandpower_output(synthetic_eeg_signal):
@@ -73,4 +73,28 @@ def test_absolute_bandpower_output(synthetic_eeg_signal):
     fe = FeatureExtractor
 
     bandpower = fe.compute_absolute_bandpower(signal, fs)
+
+    expected_bands = ['delta', 'theta', 'alpha', 'beta', 'gamma']
+
+    # Ensure output is a dictionary with exactly 5 EEG bands.
+    assert isinstance(bandpower, dict), 'Output must be a dictionary.'
+    assert set(bandpower.keys()) == set(expected_bands), 'Missing or extra EEG bands in results.'
+
+    # Validate each band's power output (5 of them).
+    for band in expected_bands:
+        values = bandpower[band]
+
+        # Output must be a NumPy array.
+        assert isinstance(values, np.ndarray)
+        
+        # Must be 1D: one value per channel.
+        assert values.ndim == 1, f'{band} bandpower must be 1D.'
+
+        # Length must equal number of input channels.
+        assert values.shape[0] == signal.shape[0], f'{band} length mismatch with input channels.'
+
+        # All values must be >= 0 (power cannot be negative).
+        assert np.all(values >= 0), f'{band} bandporwer contains negative power values.'
+
     
+
