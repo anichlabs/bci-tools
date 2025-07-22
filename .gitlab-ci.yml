@@ -1,10 +1,13 @@
 stages:
   - test
 
-test_podman:
+podman_hello_world:
   stage: test
   tags:
-    - bci
+    - bci  # Must match the tag configured in config.toml for your runner
   script:
-    - echo "ubuntu:22.04" > $CI_BUILDS_DIR/image
-    - podman run --rm ubuntu:22.04 echo "Hello from Podman CI"
+    - echo "Hello from inside the Podman container!"
+    - echo "Build directory: $CI_BUILDS_DIR"
+    - echo "Running as: $(whoami)"
+    - echo "OS release info:"
+    - cat /etc/os-release
