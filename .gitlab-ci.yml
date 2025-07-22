@@ -1,0 +1,10 @@
+stages:
+  - test
+
+test_podman:
+  stage: test
+  tags:
+    - bci
+  script:
+    - echo "CI using Podman is working"
+    - podman info
