@@ -39,3 +39,4 @@ bci-tools/
 - Train basic movement intent classifier (SVM-based)
 - Sync pipeline to Hetzner VPS via Git
 - Begin development of the user interface
+First CI/CD test with GitLab Runner — BCI-TOOLS
