@@ -6,5 +6,7 @@ test_podman:
   tags:
     - bci
   script:
-    - echo "CI using Podman is working"
-    - podman info
+    - echo "ubuntu:22.04" > $CI_BUILDS_DIR/image
+    - echo 'echo "Podman container running inside GitLab CI"' > run.sh
+    - chmod +x run.sh
+    - ./run.sh
