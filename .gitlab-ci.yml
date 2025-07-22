@@ -4,10 +4,10 @@ stages:
 podman_hello_world:
   stage: test
   tags:
-    - bci  # Must match the tag configured in config.toml for your runner
+    - bci  # Match your runner's tag
   script:
     - echo "Hello from inside the Podman container!"
-    - echo "Build directory: $CI_BUILDS_DIR"
-    - echo "Running as: $(whoami)"
+    - echo "uild directory: $CI_BUILDS_DIR"
+    - whoami
     - echo "OS release info:"
     - cat /etc/os-release
