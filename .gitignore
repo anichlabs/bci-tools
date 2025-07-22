@@ -1,0 +1,26 @@
+# Ignore raw and processed EEG data
+/data/raw/
+/data/clean/
+/data/feat/
+/data/classified/
+
+# Ignore environment and Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.env
+
+# Ignore Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Ignore temporary editor files
+*~
+*.swp
+*.swo
+
+# Ignore log and runtime files
+*.log
+*.tmp
+*.bak
