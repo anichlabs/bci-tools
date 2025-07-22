@@ -4,10 +4,10 @@ stages:
 podman_hello_world:
   stage: test
   tags:
-    - bci  # Match your runner's tag
+    - bci
   script:
-    - echo "Hello from inside the Podman container!"
-    - echo "uild directory: $CI_BUILDS_DIR"
+    - echo "Hello from inside the Podman container"
+    - echo "Build directory: $CI_BUILDS_DIR"
     - whoami
     - echo "OS release info:"
     - cat /etc/os-release
