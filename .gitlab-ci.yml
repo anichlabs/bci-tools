@@ -1,13 +1,10 @@
 stages:
   - test
 
-podman_hello_world:
+test_podman:
   stage: test
   tags:
     - bci
   script:
-    - echo "Hello from inside the Podman container"
-    - echo "Build directory: $CI_BUILDS_DIR"
-    - whoami
-    - echo "OS release info:"
-    - cat /etc/os-release
+    - echo "CI using Podman is working"
+    - podman info
