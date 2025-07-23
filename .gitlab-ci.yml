@@ -1,10 +1,13 @@
 stages:
-  - test
+  - verify
 
-test_podman:
-  stage: test
+podman-test:
+  stage: verify
   tags:
-    - bci
+    - podman  # Only if you assigned this tag in your runner
   script:
-    - echo "CI using Podman is working"
-    - podman info
+    - echo "Podman version:"
+    - podman --version
+    - echo "Listing containers (should be empty):"
+    - podman ps
+    - echo "Podman is working inside GitLab CI"
