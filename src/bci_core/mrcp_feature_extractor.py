@@ -85,6 +85,12 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
         - The sum of these trapezoid areas provides an approximation of the total area 
           under the curve.
 
+        -4.0 -> 0.0: is a pre-movement analysis window commonly used in MRCP studies.
+        It includes:
+          - The late Bereitschaftspotential (readiness potential).
+          - The negative peak close to movement onset.
+          - This window often contains the strongest motor-related signals.
+
         Args:
             trial (np.ndarray): EEG trial of shape (n_channels, n_samples).
                                 The last sample corresponds to time t = 0.0.
@@ -94,3 +100,33 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
         '''
         if trial.ndim != 2:
             raise ValueError('Input trial must be a 2D array (n_channels x n_samples)')
+
+        n_channels, n_samples = trial.shape
+
+        # Generate time axis in seconds. Assumes t = 0 is at the last column.
+        self.t = np.linspace(-n_samples / self.sfreq, 0, n_samples) # 4, so (-4, 0, 1000).
+                                                                    # 0 is the movement onset, and 
+                                                                    # -4.0 is the start of the trial, to check 
+                                                                    # MRCP (Motor-Related Cortical Potential).
+        # Define time window for AUC computation: from -1.5 to 0.0 s.
+        idx_window = np.where((self.t >= -1.5) & (self.t <= 0.0))[0]
+
+        # Initialise dictionary to store AUC per channel.
+        auc_per_channel = {}
+        
+        for ch in range(n_channels):
+            # Extract signal segment within the defined window.
+            segment = trial[ch, idx_window]
+
+            # Extract corresponding time points.
+            t_segment = self.t[idx_window]
+
+            # Compute area using trapezoidal integration.
+            auc = np.trapezoid(segment, x=t_segment)
+
+            # Store in results.
+            auc_per_channel[ch] = auc
+
+    return auc_per_channel
+
+

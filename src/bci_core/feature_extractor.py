@@ -57,8 +57,8 @@ class FeatureExtractor:
         """
         Compute absolute and relative bandpower for each EEG band and channel.
 
-        Uses Welch’s method to estimate power spectral density (PSD),
-        then integrates PSD over each frequency band using NumPy’s trapezoid rule.
+        Uses Welch's method to estimate power spectral density (PSD),
+        then integrates PSD over each frequency band using NumPy's trapezoid rule.
 
         Args:
             signal (np.ndarray): EEG data of shape (n_channels, n_samples)
@@ -68,7 +68,7 @@ class FeatureExtractor:
         """
         
         if signal.ndim != 2:
-            raise ValueError("Signal must be a 2D array (n_channels × n_samples)")
+            raise ValueError("Signal must be a 2D array (n_channels x n_samples)")
 
         n_channels = signal.shape[0]
         self.bandpower = {ch: {} for ch in range(n_channels)}
