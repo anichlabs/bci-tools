@@ -66,3 +66,31 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
         self.t = None      # Time axis (set per trial)
                            # Prepares for future time vector (self.t) to allow 
                            # slicing windows in seconds, not just samples
+
+    def extract_area(self, trial: np.ndarray) -> Dict[int, float]:
+        '''
+        Compute the area under the curve (AUC) of MRCP per channel.
+
+        This method integrates the EEG signal from -1.5 to 0.0 seconds
+        using the trapezoidal rule. It assumes the signal is already filtered
+        and baseline corrected. The area is usually negative, reflecting the
+        downward deflection of the MRCP waveform.
+
+        Concept:
+        - Instead of trying to find the exact area under a curve using calculus, the 
+          trapezoidal rule approximates it by dividing the area into a series of 
+          trapezoids. 
+        - Each trapezoid's area is calculated using the formula: 
+          (1/2) * height * (base1 + base2). 
+        - The sum of these trapezoid areas provides an approximation of the total area 
+          under the curve.
+
+        Args:
+            trial (np.ndarray): EEG trial of shape (n_channels, n_samples).
+                                The last sample corresponds to time t = 0.0.
+
+        Returns:
+            Dict[int, float]: Dictionary mapping channel index to AUC value.
+        '''
+        if trial.ndim != 2:
+            raise ValueError('Input trial must be a 2D array (n_channels x n_samples)')
