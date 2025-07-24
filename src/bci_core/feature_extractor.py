@@ -10,15 +10,15 @@ class FeatureExtractor:
     This class extracts absolute and relative power features from EEG signals
     across a wide range of standard and extended frequency bands, including:
 
-        - Delta       (0.5–4 Hz)
-        - Theta       (4–8 Hz)
-        - Mu          (8–13 Hz)
-        - Low Alpha   (8–10 Hz)
-        - High Alpha  (10–12 Hz)
-        - Alpha       (8–12 Hz)
-        - Beta        (12–30 Hz)
-        - Gamma       (30–45 Hz)
-        - High Gamma  (60–100 Hz)
+        - Delta       (0.5-4 Hz)
+        - Theta       (4-8 Hz)
+        - Mu          (8-13 Hz)
+        - Low Alpha   (8-10 Hz)
+        - High Alpha  (10-12 Hz)
+        - Alpha       (8-12 Hz)
+        - Beta        (12-30 Hz)
+        - Gamma       (30-45 Hz)
+        - High Gamma  (60-100 Hz)
     
     Power values are calculated using Welch's method (non-parametric PSD estimate),
     and stored for later access per channel and frequency band.
