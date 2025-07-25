@@ -1,8 +1,8 @@
 # src/bci_core/mrcp_feature_extractor.py
 
 '''
-MRCPs are slow negative EEG potentials observable in the 1-2 seconds before 
-voluntary movement.
+Motor-Related Cortical Potential (MRCPs) are slow negative EEG potentials observable in the 1-2 seconds before 
+voluntary movement. Most clearly seen over central electrodes (Cz, C3, C4).
 
 They are event-related potentials (ERP) and reflect brain activity in the 
 supplementary motor area, premotor cortex, and primary motor cortex.
@@ -15,10 +15,20 @@ MRCP features are:
 
 For each channel (especially Cz, C3, C4), extract:
     Feature	Method:
-    - Area	Trapezoidal integration from -1.5 to 0 s
+    - Area	Trapezoidal integration from -1.5 to 0.0 s
     - Negative peak	Minimum voltage in the window
     - Slope	Linear fit (least squares) from -1.0 to -0.5 s
-    - Mahalanobis distance	From mean rest template
+        - Least Squares Method is used to derive a generalized linear equation 
+          between two variables. When the value of the dependent and independent 
+          variables they are represented as x and y coordinates in a 2D Cartesian 
+          coordinate system. Initially, known values are marked on a plot. The plot obtained at this point is called a scatter plot.
+    - Mahalanobis distance
+        - The Mahalanobis distance is the distance to the centre of a class taking 
+          correlation into account and is the same for all points on the same 
+          probability ellipse. For equally probable classes, i.e. classes with the 
+          same number of training objects, a smaller Mahalanobis distance to class 
+          K than to class L, means that the probability that the object belongs to 
+          class K is larger than that it belongs to L.
 '''
 
 import numpy
@@ -180,8 +190,8 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
         A steeper slope means stronger or faster preparation, while a flatter one 
         might suggest delayed or reduced cortical involvement.
         This function extracts that slope per channel using linear regression in 
-        the window prior to movement onset (t = 0), aiding in movement-related signal 
-        characterisation.
+        the window prior to movement onset (t = 0), aiding in movement-related 
+        signal characterisation.
 
         This method fits a straight line to the EEG signal between
         -1.0 and -0.5 seconds before movement onset using the least
