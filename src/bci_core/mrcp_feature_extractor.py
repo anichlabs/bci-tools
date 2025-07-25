@@ -201,6 +201,71 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
         n_channel, n_samples = trial.shape
 
         if self.t is None or len(self.t) != n_samples:
-            self.t = np.linspace(-n_samples / self.sfreq, 0, n_samples) # Time at sample 0 = -4.0 seconds
-                                                                        # Time at sample 999 = 0.0 seconds
-                                                                        # Step = 4.0 / (1000 - 1) ≈ 0.004 seconds per sample
+            # self.t generates a vector of n_samples values.
+            self.t = np.linspace(-n_samples / self.sfreq, 0, n_samples) # Time at sample 0 = -4.0 seconds.
+                                                                        # Time at sample 999 = 0.0 seconds.
+                                                                        # Step = 4.0 / (1000 - 1) ≈ 0.004 
+                                                                        # seconds per sample.
+        
+        # Define slope window: from -1.0 to -0.5.
+        idx_window = np.where((self.t >= -1.5) & (self.t <= 0.0))
+
+        # Initialise output directly.
+        slope_per_channel = {}
+
+        for ch in range (n_channel):
+            # Extract time an signal for slope computation.
+            t_segment = self.t[idx_window]
+            segment = trial[ch, idx_window]
+
+            # Fit a first-degree polynomial (linear fit): y = mx + b
+            coeffs = np.polyfit(t_segment, segment, deg=1) # Uses np.polyfit() to fit a line 
+                                                           # y = mt + b over [−1.0, −0.5] seconds.
+
+            # Extract the slope (coefficient of t).
+            slope = coeffs[0]
+
+            slope_per_channel[ch] = slope
+        
+        return slope_per_channel
+
+    def extract_all(self, trial: np.ndarray) -> Dict[int, Dict[str, float]]:
+        '''
+        Extract all MRCP features for a given EEG trial.
+
+        This method computes the area under the curve, negative peak,
+        and slope for each channel and aggregates them into a single
+        dictionary. Results are also stored internally for reuse.
+
+        Args:
+            trial (np.ndarray): EEG trial of shape (n_channels, n_samples).
+                                The last sample must correspond to time t = 0.0.
+
+        Returns:
+            Dict[int, Dict[str, float]]: Nested dictionary of the form:
+                results[channel] = {
+                    'area': float,
+                    'peak': float,
+                    'slope': float
+                }
+        '''
+        # Run each feature extractor separately.
+        areas = self.extract_area(trial)
+        peaks = self.extraxt_peak(trial)
+        slope = self.extract_slope(trial)
+
+        # Initialise final result dictionary.
+        all_features = {}
+
+        for ch in areas.keys():
+            # Merge features per channel.
+            all_features[ch] = {
+                'area': areas[ch],
+                'peak': peaks[ch],
+                'slope': slopes[ch]
+            }
+
+        # Store internally for downstream analysis or debugging.
+        self.results = all_features
+
+        return all_features
