@@ -127,6 +127,80 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
             # Store in results.
             auc_per_channel[ch] = auc
 
-    return auc_per_channel
+        return auc_per_channel
 
+    def extract_peak(self, trial):
+        '''
+        Compute the negative peak amplitude of Motor-Related Cortical Potential 
+        (MRCP) per channel.
+        
+        This method scans each EEG channel to identify the most negative
+        voltage value in the interval from -1.5 to 0.0 seconds. This peak
+        typically occurs just before the voluntary movement and serves as
+        a critical feature in MRCP-based classification tasks.
 
+        Args:
+            trial (np.ndarray): EEG trial of shape (n_channels, n_samples).
+                                The last sample must correspond to time t = 0.0.
+
+        Returns:
+            Dict[int, float]: Dictionary mapping channel index to negative peak value.
+        '''
+        if trial.ndim != 2:
+            raise ValueError ('Input trial must be a 2D array (n_channels x n_samples).')
+        
+        n_channels, n_samples = trial.shape
+
+        if self.t is None or len(self.t) != n_samples:
+            self.t = np.linspace(-n_samples / self.sfreq, 0, n_samples)
+
+        # Define the time window of interest: [-1.5, 0.0] seconds.
+        idx_window = np.where((self.t >= -1.5) & (self.t <= 0.0))[0]
+
+        # Initialise dictionary to store peak values.
+        peak_per_channel = {}
+
+        for ch in range(n_channels):
+            # Extract segment for this channel.
+            segment = trial[ch, idx_window]
+
+            # Compute the minimum (most negative) value.
+            negative_peak = np.min(segment)
+
+            # Store result.
+            peak_per_channel[ch] = negative_peak
+        
+        return peak_per_channel
+
+    def extract_slope(self, trial: np.ndarray) -> Dict[int, float]:
+        '''
+        Compute the slope of the MRCP deflection per channel:
+        MRCP deflection refers to the downward (negative) shift in EEG amplitude 
+        that occurs in the seconds leading up to a voluntary movement.
+        A steeper slope means stronger or faster preparation, while a flatter one 
+        might suggest delayed or reduced cortical involvement.
+        This function extracts that slope per channel using linear regression in 
+        the window prior to movement onset (t = 0), aiding in movement-related signal 
+        characterisation.
+
+        This method fits a straight line to the EEG signal between
+        -1.0 and -0.5 seconds before movement onset using the least
+        squares method. The slope quantifies the rate of the negative
+        build-up and is often used to assess movement preparation dynamics.
+
+        Args:
+            trial (np.ndarray): EEG trial of shape (n_channels, n_samples).
+                                The last sample must correspond to time t = 0.0.
+
+        Returns:
+            Dict[int, float]: Dictionary mapping channel index to slope value.
+        '''
+        if trial.ndim != 2:
+            raise ValueError ('Input trial must be a 2D array (n_channel x samples).')
+        
+        n_channel, n_samples = trial.shape
+
+        if self.t is None or len(self.t) != n_samples:
+            self.t = np.linspace(-n_samples / self.sfreq, 0, n_samples) # Time at sample 0 = -4.0 seconds
+                                                                        # Time at sample 999 = 0.0 seconds
+                                                                        # Step = 4.0 / (1000 - 1) ≈ 0.004 seconds per sample
