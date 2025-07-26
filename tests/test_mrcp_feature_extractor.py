@@ -138,5 +138,34 @@ def test_peak_returns_minimum_in_window():
     for ch in range(n_channels):
         assert np.isclose(peaks[ch], -25e-6, atol=1e-7)
 
+def test_slope_detects_linear_descent():
+    '''
+    Test that extract_slope() returns the correct slope value for a
+    linearly decreasing EEG signal.
 
-    
+    The synthetic EEG trial has each channel decreasing from 0 μV
+    at -4.0 seconds to -10.0 μV at 0.0 seconds. Over the interval
+    [-1.0, -0.5] seconds, this corresponds to a constant slope of
+    -20.0 μV/s. The test checks that all slopes are close to this
+    expected value.
+    The slope is constant anywhere in the signal.
+    '''
+    sfreq = 250
+    duration_sec = 4.0
+    n_samples = int(duration_sec * sfreq)
+    t = np.linspace(-duration_sec, 0, n_samples)
+
+    n_channels = 4
+    eeg = np.zeros((n_channels, n_samples))
+
+    '''
+    t \ t[-1]
+        - t is a 1D array from -4.0 to 0.0 (e.g, 1000 samples at 250 Hz)
+        - t[-1] is the last value in the array -> 0.0
+        - t[0] = -4.0, t[-1] = 0.0
+        - Dividing by (t[-1] - t[0]) = 4.0 normalises it to the range [0.0, 1.0]
+        - Then multiply by -10e6 maps it to [0.0, -10.0µV]
+    '''
+    for ch in range(n_channels):
+        # eeg is in µV.
+        eeg[ch] = -10e-6 * (t / abs(t[0]) ) # Maps from 0.0 to -10.0 μV linearly.
