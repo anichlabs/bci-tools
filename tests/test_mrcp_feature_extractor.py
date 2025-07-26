@@ -212,16 +212,19 @@ def test_extract_all_combines_all_features():
     for ch in range(n_channels):
         f = results[ch]
 
-        # Check if structure is negative.
+        # Check structure.
         assert set(f.keys()) == {'area', 'peak', 'slope'}
 
-        # Check if peak is negative.
+        # Check peak.
         assert np.isclose(f['peak'], -25e-6, atol=1e-7)
 
         # Check if area is negative.
         assert f['area'] < 0.0
 
-        # Check if slope is negative.
+        # Check slope value.
+        assert np.isclose(f['slope'], -20e-6, atol=1e-7)
+
+
 
 
 
