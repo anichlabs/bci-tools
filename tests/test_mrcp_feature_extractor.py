@@ -168,4 +168,60 @@ def test_slope_detects_linear_descent():
     '''
     for ch in range(n_channels):
         # eeg is in µV.
+        # Linerly decrease from 0 μV to -10 μV over 4 seconds.
         eeg[ch] = -10e-6 * (t / abs(t[0]) ) # Maps from 0.0 to -10.0 μV linearly.
+                                            # abs() is the absolute value of a number.
+
+def test_extract_all_combines_all_features():
+    '''
+    Test that extract_all() produces a consistent and correctly
+    structured output for a known EEG trial with both linear
+    descent and a sharp negative peak.
+
+    The signal decreases from 0 to -10 μV over 4 seconds, with a
+    -25 μV spike at -0.3 seconds. All three feature extractors
+    (area, peak, slope) are validated in one pass.
+
+    The test ensures:
+        - All channels return three features.
+        - Peak matches injected -25 μV.
+        - Area is negative.
+        - Slope ≈ -20 μV/s in the interval [-1.0, -0.5].
+    '''
+    sfreq = 250
+    duration_sec = 4.0
+    n_samples = int(duration_sec * n_samples)
+    t = np.linspace(-duration_sec, 0, n_samples)
+
+    n_channels = 4
+    eeg = np.zeros((n_channels, n_samples))
+
+    # Construct MRCP-like ramp.
+    for ch in range(n_channels):
+        eeg[ch] = -10e-6 * (t / abs(t[0]))
+
+    # Inject sharp peak at -0.3 s.
+    idx_peak = np.armin(np.abs(t = 0.3))
+    for ch in range(n_channels):
+        eeg[ch, idx_peak] = -25e-6
+
+    # Run extractor.
+    mrcp = MRCPFeatureExtractor()
+    results = mrcp.extract_all(eeg)
+
+    for ch in range(n_channels):
+        f = results[ch]
+
+        # Check if structure is negative.
+        assert set(f.keys()) == {'area', 'peak', 'slope'}
+
+        # Check if peak is negative.
+        assert np.isclose(f['peak'], -25e-6, atol=1e-7)
+
+        # Check if area is negative.
+        assert f['area'] < 0.0
+
+        # Check if slope is negative.
+
+
+
