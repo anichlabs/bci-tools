@@ -71,6 +71,25 @@ def test_area_is_negative_for_downward_mrcp():
 
 def test_peak_returns_minimum_in_window():
     '''
+    This test verifies that the system:
+        - Correctly aligns time using a meaningful EEG epoch.
+        - Detects the most negative value in a standard MRCP window.
+        - Works across multiple channels.
+        - Can handle microvolt-scale resolution, which is essential
+          for real BCI applications.
+    * An EEG epoch is a time window (e.g, from -2.0s to =1.0s) extracted
+      around an event of interest (e.g., movement onset, stimulus presentation,
+      button press), used for focused analysis of neural activity.
+      When studying movement-related cortical potentials (MRCPs), EEG changes
+      before movement are expected. So, EEG from e.g. -2.0 seconds to =0.5 seconds
+      relative to movement onset (t= 0.0 s) is extracted.
+      This time window is the EEG epoch.
+      e.g,
+        Think of continuous EEG as a full video of brain activity.
+        Epochs are like cutting out 3-second clips just before and after an action, 
+        so those clips can be studied in detail.
+
+    Test funcionalities:
     Test that extract_peak() correctly identifies the most negative
     value in the interval [-1.5, 0.0] seconds.
 
@@ -83,22 +102,39 @@ def test_peak_returns_minimum_in_window():
     sfreq = 250
     duration_sec = 4.0
     n_samples = int(duration_sec * sfreq)
-    t = np.linspace(-duration_sec, 0, n_samples)
-
+    # Create a time axis in seconds for the EEG trial.
+    # t acts as a time axis to align each sample in your EEG trial with its 
+    # relative time. This is critical for plotting, analysing event-related 
+    # potentials (e.g. MRCP), and computing time-specific features (e.g. slope before t=0).
+    t = np.linspace(-duration_sec, 0, n_samples) # linspace = linearly spaced values.
+                                                 # np.linspace(start, stop, num)
     n_channels = 4
+
+    # EEG noise drawn from a Gaussian distribution with:
+    #   - Mean = 0 µV
+    #   - Std = 1 µV (realistic baseline EEG fluctuation)
+    # Shape: (4, 1000)
     eeg = np.random.normal(loc=0.0, scale=1e-6, size=(n_channels, n_samples))
 
     # Inject a known negative peak at -0.3 seconds.
-    idx_peak = np.argmin(np.abs(t = 0.3)) # Find index closest to t = -0.3.
-
-    for ch in range(ch_channels):
-        egg[ch, idx_peak] = -25e-6 # Set sharp minimum.
+    # Finds the index in t where time is closest to −0.3 seconds 
+    # (a common peak location in real MRCPs).
+    idx_peak = np.argmin(np.abs(t + 0.3)) 
+ 
+    # Inject a sharp negative peak of -25µV at idx_peak timepoint for every channel.
+    # This mimics a movement-preparation MRCP with a clear deflection.
+    for ch in range(n_channels):
+        eeg[ch, idx_peak] = -25e-6 # Set sharp minimum.
     
-    # Instantiate and extract.
+    # Instantiate the feature extractor (which knows how to process EEG aligned 
+    # to movement).
+    # Call extract_peaks() to return the most negative value per channel within
+    # the window [-1.5, 0.0]s.
     mrcp = MRCPFeatureExtractor(sfreq=sfreq)
     peaks = mrcp.extract_peaks(eeg)
 
-    # Assert that each detected peak equals the injected -25 μV.
+    # Confirm that for each channel, the detected peak is exactly -25 µV, within a
+    # small tolerance (±0.1 µV). If even one value is wrong, the test must fail.
     for ch in range(n_channels):
         assert np.isclose(peaks[ch], -25e-6, atol=1e-7)
 
