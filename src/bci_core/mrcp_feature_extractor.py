@@ -31,7 +31,7 @@ For each channel (especially Cz, C3, C4), extract:
           class K is larger than that it belongs to L.
 '''
 
-import numpy
+import numpy as np
 from typing import Dict
 
 class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
@@ -132,7 +132,7 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
             t_segment = self.t[idx_window]
 
             # Compute area using trapezoidal integration.
-            auc = np.trapezoid(segment, x=t_segment)
+            auc = -np.trapezoid(segment, x=t_segment)
 
             # Store in results.
             auc_per_channel[ch] = auc
@@ -218,7 +218,7 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
                                                                         # seconds per sample.
         
         # Define slope window: from -1.0 to -0.5.
-        idx_window = np.where((self.t >= -1.5) & (self.t <= 0.0))
+        idx_window = np.where((self.t >= -1.0) & (self.t <= -0.5))[0]
 
         # Initialise output directly.
         slope_per_channel = {}
@@ -261,7 +261,7 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
         '''
         # Run each feature extractor separately.
         areas = self.extract_area(trial)
-        peaks = self.extraxt_peak(trial)
+        peaks = self.extract_peak(trial)
         slope = self.extract_slope(trial)
 
         # Initialise final result dictionary.
@@ -272,7 +272,7 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
             all_features[ch] = {
                 'area': areas[ch],
                 'peak': peaks[ch],
-                'slope': slopes[ch]
+                'slope': slope[ch]
             }
 
         # Store internally for downstream analysis or debugging.

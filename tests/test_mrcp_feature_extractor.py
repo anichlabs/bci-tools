@@ -1,7 +1,7 @@
 # test/test_mrcp_feature_extractor.py
 
 import numpy as np
-from bci_core.mrcp.feature_extractor import MRCPFeatureExtractor
+from bci_core.mrcp_feature_extractor import MRCPFeatureExtractor
 
 def test_extract_all_returns_correct_keys():
     '''
@@ -59,11 +59,11 @@ def test_area_is_negative_for_downward_mrcp():
     eeg = np.zeros((n_channels, n_samples))
 
     for ch in range(n_channels):
-        eeg[ch] = -10e6 * (t / t[-1]) # Linear from 0 to -10 μV.
+        eeg[ch] = -10e-6 * (t / abs(t[0])) # Linear from 0 to -10 μV.
 
     # Instantiate and extract.
     mrcp = MRCPFeatureExtractor(sfreq=sfreq)
-    areas = mrcp.extract(eeg)
+    areas = mrcp.extract_area(eeg)
 
     # Assert all areas are negative.
     for ch in range(n_channels):
@@ -128,10 +128,10 @@ def test_peak_returns_minimum_in_window():
     
     # Instantiate the feature extractor (which knows how to process EEG aligned 
     # to movement).
-    # Call extract_peaks() to return the most negative value per channel within
+    # Call extract_peak() to return the most negative value per channel within
     # the window [-1.5, 0.0]s.
     mrcp = MRCPFeatureExtractor(sfreq=sfreq)
-    peaks = mrcp.extract_peaks(eeg)
+    peaks = mrcp.extract_peak(eeg)
 
     # Confirm that for each channel, the detected peak is exactly -25 µV, within a
     # small tolerance (±0.1 µV). If even one value is wrong, the test must fail.
@@ -158,8 +158,8 @@ def test_slope_detects_linear_descent():
     n_channels = 4
     eeg = np.zeros((n_channels, n_samples))
 
-    '''
-    t \ t[-1]
+    r'''
+     t \ t[-1]
         - t is a 1D array from -4.0 to 0.0 (e.g, 1000 samples at 250 Hz)
         - t[-1] is the last value in the array -> 0.0
         - t[0] = -4.0, t[-1] = 0.0
@@ -190,7 +190,7 @@ def test_extract_all_combines_all_features():
     '''
     sfreq = 250
     duration_sec = 4.0
-    n_samples = int(duration_sec * n_samples)
+    n_samples = int(duration_sec * sfreq)
     t = np.linspace(-duration_sec, 0, n_samples)
 
     n_channels = 4
@@ -201,7 +201,7 @@ def test_extract_all_combines_all_features():
         eeg[ch] = -10e-6 * (t / abs(t[0]))
 
     # Inject sharp peak at -0.3 s.
-    idx_peak = np.armin(np.abs(t = 0.3))
+    idx_peak = np.argmin(np.abs(t + 0.3))
     for ch in range(n_channels):
         eeg[ch, idx_peak] = -25e-6
 
@@ -222,9 +222,4 @@ def test_extract_all_combines_all_features():
         assert f['area'] < 0.0
 
         # Check slope value.
-        assert np.isclose(f['slope'], -20e-6, atol=1e-7)
-
-
-
-
-
+        assert np.isclose(f['slope'], -2.5e-6, atol=1e-7)
