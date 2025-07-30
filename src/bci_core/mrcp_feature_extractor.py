@@ -132,7 +132,7 @@ class MRCPFeatureExtractor: # Create the base class MRCPFeatureExtractor
             t_segment = self.t[idx_window]
 
             # Compute area using trapezoidal integration.
-            auc = -np.trapezoid(segment, x=t_segment)
+            auc = -np.trapz(segment, x=t_segment)
 
             # Store in results.
             auc_per_channel[ch] = auc
